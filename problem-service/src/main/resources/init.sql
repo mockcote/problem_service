@@ -20,3 +20,4 @@ CREATE TABLE problem_tag (
     FOREIGN KEY (problem_id) REFERENCES problem(problem_id) ON DELETE CASCADE,
     FOREIGN KEY (tag_id) REFERENCES tag_label(tag_id) ON DELETE CASCADE
 );
+

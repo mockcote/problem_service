@@ -7,4 +7,5 @@ import com.mockcote.problem.dbsave.tag.entity.TagLabel;
 
 @Repository
 public interface TagLabelRepository extends JpaRepository<TagLabel, Integer> {
+    boolean existsById(Integer id);
 }
