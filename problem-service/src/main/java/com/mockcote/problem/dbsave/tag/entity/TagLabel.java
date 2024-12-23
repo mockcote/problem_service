@@ -19,4 +19,31 @@ public class TagLabel {
 
     @Column(name = "tag_name", nullable = false)
     private String tagName;
+    
+ // 기본 생성자
+    public TagLabel() {
+    }
+
+    // 필요하면 편의상 사용할 수 있는 생성자
+    public TagLabel(Integer tagId, String tagName) {
+        this.tagId = tagId;
+        this.tagName = tagName;
+    }
+
+    // Getter/Setter
+    public Integer getTagId() {
+        return tagId;
+    }
+
+    public void setTagId(Integer tagId) {
+        this.tagId = tagId;
+    }
+
+    public String getTagName() {
+        return tagName;
+    }
+
+    public void setTagName(String tagName) {
+        this.tagName = tagName;
+    }
 }
