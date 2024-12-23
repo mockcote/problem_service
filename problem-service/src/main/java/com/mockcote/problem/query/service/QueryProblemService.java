@@ -79,6 +79,10 @@ public class QueryProblemService {
             }
         }
     }
+    
+    public QueryProblem getRandomProblemWithinDifficulty() {
+        return problemRepository.findRandomProblemWithinDifficulty();
+    }
 }
 
 	

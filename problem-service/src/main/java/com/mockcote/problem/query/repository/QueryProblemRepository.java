@@ -47,6 +47,15 @@ public interface QueryProblemRepository extends JpaRepository<QueryProblem, Inte
 		    List<Integer> undesiredTags,
 		    int limitSize
 		);
+	
+	@Query(value = """
+	        SELECT * 
+	        FROM problem 
+	        WHERE difficulty BETWEEN 1 AND 5
+	        ORDER BY RAND() 
+	        LIMIT 1
+	        """, nativeQuery = true)
+	    QueryProblem findRandomProblemWithinDifficulty();
 
 
 
