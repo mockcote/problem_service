@@ -8,6 +8,10 @@ CREATE TABLE problem (
     acceptable_user_count INT NOT NULL  -- 맞은 사람 수
 );
 
+-- ALTER TABLE problem
+-- ADD INDEX idx_difficulty_acceptable_user_count (difficulty, acceptable_user_count);
+
+
 CREATE TABLE tag_label (
     tag_id INT PRIMARY KEY,             -- 태그 식별 번호
     tag_name VARCHAR(100) NOT NULL      -- 태그 이름
@@ -21,3 +25,9 @@ CREATE TABLE problem_tag (
     FOREIGN KEY (tag_id) REFERENCES tag_label(tag_id) ON DELETE CASCADE
 );
 
+CREATE TABLE user_solved_problem (
+    user_id VARCHAR(50) NOT NULL,
+    problem_id INT NOT NULL,
+    PRIMARY KEY (user_id, problem_id),
+    FOREIGN KEY (problem_id) REFERENCES problem(problem_id)
+);

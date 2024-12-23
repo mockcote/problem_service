@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-@Entity
+@Entity(name = "DbSaveProblemTag")
 @Table(name = "problem_tag")
 @Getter
 @Setter
