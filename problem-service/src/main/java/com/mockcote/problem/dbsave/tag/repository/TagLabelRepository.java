@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 
 import com.mockcote.problem.dbsave.tag.entity.TagLabel;
 
-@Repository
+@Repository("dbsaveTagLabelRepository")
 public interface TagLabelRepository extends JpaRepository<TagLabel, Integer> {
     boolean existsById(Integer id);
     

@@ -1,17 +1,13 @@
-package com.mockcote.problem.dbsave.tag.entity;
+package com.mockcote.problem.query.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
 
-@Entity(name = "DbSaveTagLabel")
+@Entity
 @Table(name = "tag_label")
-@Getter
-@Setter
-public class TagLabel {
+public class QueryTagLabel {
 
     @Id
     @Column(name = "tag_id")
@@ -19,18 +15,9 @@ public class TagLabel {
 
     @Column(name = "tag_name", nullable = false)
     private String tagName;
-    
- // 기본 생성자
-    public TagLabel() {
-    }
 
-    // 필요하면 편의상 사용할 수 있는 생성자
-    public TagLabel(Integer tagId, String tagName) {
-        this.tagId = tagId;
-        this.tagName = tagName;
-    }
+    protected QueryTagLabel() {}
 
-    // Getter/Setter
     public Integer getTagId() {
         return tagId;
     }
