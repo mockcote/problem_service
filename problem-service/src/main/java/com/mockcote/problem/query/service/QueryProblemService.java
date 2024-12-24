@@ -29,20 +29,15 @@ public class QueryProblemService {
     public QueryProblem findOneProblemForUser(String userId,
                                               QueryProblemRequestDto requestDto,
                                               Set<Integer> solvedProblemIds) {
-        // 1) user_solved_problem 테이블에 (userId, problemId) 저장
+        // 1) 이미 푼 문제 저장
         storeUserSolvedProblems(userId, solvedProblemIds);
 
-        // 2) candidate(후보) 목록 조회
-        List<Integer> desiredTags = requestDto.getDesiredTags();
-        if (desiredTags == null || desiredTags.isEmpty()) {
-            desiredTags = List.of(-99999); // 더미값
-        }
-        List<Integer> undesiredTags = requestDto.getUndesiredTags();
-        if (undesiredTags == null) {
-            undesiredTags = List.of();
-        }
+        // 2) 조건 필터링 및 candidate 조회
+        List<Integer> desiredTags = (requestDto.getDesiredTags() == null || requestDto.getDesiredTags().isEmpty())
+                ? null : requestDto.getDesiredTags();
+        List<Integer> undesiredTags = (requestDto.getUndesiredTags() == null || requestDto.getUndesiredTags().isEmpty())
+                ? null : requestDto.getUndesiredTags();
 
-        // LIMIT 1000으로 예시
         List<QueryProblem> candidates = problemRepository.findCandidateProblemsExcludingSolved(
                 userId,
                 requestDto.getMinDifficulty(),
@@ -58,10 +53,11 @@ public class QueryProblemService {
             return null; // 조건에 맞는 문제가 전혀 없다!
         }
 
-        // 3) 애플리케이션 레벨에서 랜덤 인덱스를 뽑아 1개 선택
+        // 3) 랜덤 선택
         int randomIndex = new java.util.Random().nextInt(candidates.size());
         return candidates.get(randomIndex);
     }
+
 
     private void storeUserSolvedProblems(String userId, Set<Integer> solvedProblemIds) {
         // 예시: 대량 처리는 Native Insert Ignore or Batch Insert 고려

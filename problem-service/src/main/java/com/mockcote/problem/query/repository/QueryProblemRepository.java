@@ -23,17 +23,21 @@ public interface QueryProblemRepository extends JpaRepository<QueryProblem, Inte
 		     WHERE usp.problem_id IS NULL
 		       AND p.difficulty BETWEEN ?2 AND ?3
 		       AND p.acceptable_user_count BETWEEN ?4 AND ?5
-		       AND EXISTS (
-		           SELECT 1
-		           FROM problem_tag pt
-		           WHERE pt.problem_id = p.problem_id
-		             AND pt.tag_id IN (?6)
+		       AND (
+		           COALESCE(?6, NULL) IS NULL OR EXISTS (
+		               SELECT 1
+		               FROM problem_tag pt
+		               WHERE pt.problem_id = p.problem_id
+		                 AND pt.tag_id IN (?6)
+		           )
 		       )
-		       AND NOT EXISTS (
-		           SELECT 1
-		           FROM problem_tag pt
-		           WHERE pt.problem_id = p.problem_id
-		             AND pt.tag_id IN (?7)
+		       AND (
+		           COALESCE(?7, NULL) IS NULL OR NOT EXISTS (
+		               SELECT 1
+		               FROM problem_tag pt
+		               WHERE pt.problem_id = p.problem_id
+		                 AND pt.tag_id IN (?7)
+		           )
 		       )
 		     LIMIT ?8
 		    """, nativeQuery = true)
@@ -47,6 +51,7 @@ public interface QueryProblemRepository extends JpaRepository<QueryProblem, Inte
 		    List<Integer> undesiredTags,
 		    int limitSize
 		);
+
 	
 	@Query(value = """
 	        SELECT * 
