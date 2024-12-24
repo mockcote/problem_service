@@ -1,5 +1,6 @@
 package com.mockcote.problem.query.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -35,16 +36,15 @@ public class QueryProblemService {
         // 2) candidate(후보) 목록 조회
         List<Integer> desiredTags = requestDto.getDesiredTags();
         if (desiredTags == null || desiredTags.isEmpty()) {
-        	desiredTags = null; // 빈 리스트 대신 null 설정
+            // 1부터 218까지의 모든 태그 포함
+            desiredTags = createRangeList(1, 218);
         }
+
         List<Integer> undesiredTags = requestDto.getUndesiredTags();
         if (undesiredTags == null) {
             undesiredTags = List.of();
         }
-        
-        
 
-        // LIMIT 1000으로 예시
         List<QueryProblem> candidates = problemRepository.findCandidateProblemsExcludingSolved(
                 userId,
                 requestDto.getMinDifficulty(),
@@ -64,6 +64,15 @@ public class QueryProblemService {
         int randomIndex = new java.util.Random().nextInt(candidates.size());
         return candidates.get(randomIndex);
     }
+
+    private List<Integer> createRangeList(int start, int end) {
+        List<Integer> range = new ArrayList<>();
+        for (int i = start; i <= end; i++) {
+            range.add(i);
+        }
+        return range;
+    }
+
 
     private void storeUserSolvedProblems(String userId, Set<Integer> solvedProblemIds) {
         // 예시: 대량 처리는 Native Insert Ignore or Batch Insert 고려
