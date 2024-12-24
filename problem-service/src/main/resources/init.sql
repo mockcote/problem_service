@@ -11,6 +11,7 @@ CREATE TABLE problem (
 -- ALTER TABLE problem
 -- ADD INDEX idx_difficulty_acceptable_user_count (difficulty, acceptable_user_count);
 
+-- ALTER TABLE problem DROP INDEX idx_difficulty_acceptable_user_count;
 
 CREATE TABLE tag_label (
     tag_id INT PRIMARY KEY,             -- 태그 식별 번호

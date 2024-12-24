@@ -35,12 +35,14 @@ public class QueryProblemService {
         // 2) candidate(후보) 목록 조회
         List<Integer> desiredTags = requestDto.getDesiredTags();
         if (desiredTags == null || desiredTags.isEmpty()) {
-            desiredTags = List.of(-99999); // 더미값
+        	desiredTags = null; // 빈 리스트 대신 null 설정
         }
         List<Integer> undesiredTags = requestDto.getUndesiredTags();
         if (undesiredTags == null) {
             undesiredTags = List.of();
         }
+        
+        
 
         // LIMIT 1000으로 예시
         List<QueryProblem> candidates = problemRepository.findCandidateProblemsExcludingSolved(
