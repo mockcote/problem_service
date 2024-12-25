@@ -22,7 +22,7 @@ public interface TagLabelRepository extends JpaRepository<TagLabel, Integer> {
     	    WHERE tl.tag_id IN (:tagNames)
     	    AND p.difficulty IN (:level)
     	""", nativeQuery = true)
-    	Set<Integer> findProblemIdsByTagNamesIn(@Param("tagNames") List<String> tagNames, @Param("level") List<Integer> level);
+    	Set<Integer> findProblemIdsByTagNamesIn(@Param("tagNames") List<Integer> tagNames, @Param("level") List<Integer> level);
 
 
 }
