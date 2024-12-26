@@ -17,6 +17,6 @@ public interface TagLabelService {
 	 * @param vulnerableTagNames 취약 태그 이름 리스트
 	 * @return 문제 ID (없으면 null 혹은 Optional)
 	 */
-	Integer findRandomUnsolvedProblem(String handle, int level, List<String> vulnerableTagNames);
+	Integer findRandomUnsolvedProblem(String handle, int level);
 
 }

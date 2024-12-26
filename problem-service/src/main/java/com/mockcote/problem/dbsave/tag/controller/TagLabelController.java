@@ -36,9 +36,8 @@ public class TagLabelController {
     @GetMapping("/random-problem")
     public Integer getRandomUnsolvedProblem(
             @RequestParam String handle,
-            @RequestParam("level") int level,
-            @RequestParam("tag") List<String> vulnerableTagNames
+            @RequestParam("level") int level
     ) {
-        return tagLabelService.findRandomUnsolvedProblem(handle, level, vulnerableTagNames);
+        return tagLabelService.findRandomUnsolvedProblem(handle, level);
     }
 }
