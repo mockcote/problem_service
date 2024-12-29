@@ -9,17 +9,19 @@ import com.mockcote.problem.dbsave.tag.entity.TagLabel;
 import com.mockcote.problem.dbsave.tag.repository.TagLabelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class ProblemServiceImpl implements ProblemService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProblemServiceImpl.class);
 
     @Autowired
     private ProblemRepository problemRepository;
@@ -30,34 +32,67 @@ public class ProblemServiceImpl implements ProblemService {
     @Autowired
     private TagLabelRepository tagLabelRepository;
 
+    private final WebClient webClient;
+
+    public ProblemServiceImpl(WebClient.Builder webClientBuilder) {
+        this.webClient = webClientBuilder.baseUrl("https://solved.ac/api/v3").build();
+    }
+
     @Override
     @Transactional
     public void fetchAndSaveAllProblems() {
-        RestTemplate restTemplate = new RestTemplate();
-        int batchSize = 50; // 한 번에 가져올 문제 수
-        int startId = 1000; // 시작 ID
-        int endId = 32974;   // 종료 ID
+    	int[] currentPage = {1}; // 배열로 선언
+        int totalCount = 0;
+        int processedCount = 0;
 
-        for (int i = startId; i <= endId; i += batchSize) {
-            String problemIds = generateProblemIdsParam(i, Math.min(i + batchSize - 1, endId));
-            String apiUrl = "https://solved.ac/api/v3/problem/lookup?problemIds=" + problemIds;
+        try {
+            while (true) {
+                // WebClient로 API 호출
+                String apiUrl = "/search/problem";
 
-            try {
-                ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
-                        apiUrl,
-                        HttpMethod.GET,
-                        null,
-                        new ParameterizedTypeReference<>() {}
-                );
+                Map<String, Object> responseBody = webClient.get()
+                	    .uri(uriBuilder -> uriBuilder.path(apiUrl)
+                	            .queryParam("query", "lang:ko")
+                	            .queryParam("page", String.valueOf(currentPage[0])) // currentPage를 String으로 변환
+                	            .build())
+                	    .header("User-Agent", "Mozilla/5.0")
+                	    .retrieve()
+                	    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
+                	    .block();
 
-                List<Map<String, Object>> problems = response.getBody();
-                if (problems != null) {
-                    problems.forEach(this::saveProblem);
+
+                if (responseBody == null) {
+                    logger.warn("Response body is null for page {}", currentPage);
+                    break;
                 }
-            } catch (Exception e) {
-                System.err.println("Error fetching problems for IDs: " + problemIds);
-                e.printStackTrace();
+
+                if (currentPage[0] == 1) {
+                    // 최초 페이지에서 전체 개수 확인
+                    Object countObj = responseBody.get("count");
+                    if (countObj instanceof Number) {
+                        totalCount = ((Number) countObj).intValue();
+                        logger.info("Total problems to process: {}", totalCount);
+                    } else {
+                        logger.warn("Unexpected type for 'count': {}", countObj != null ? countObj.getClass().getName() : "null");
+                    }
+                }
+
+                List<Map<String, Object>> items = (List<Map<String, Object>>) responseBody.get("items");
+                if (items == null || items.isEmpty()) {
+                    logger.info("No more items found. Ending pagination.");
+                    break;
+                }
+
+                items.forEach(this::saveProblem);
+                processedCount += items.size();
+                logger.info("Processed {}/{} problems from page {}", processedCount, totalCount, currentPage);
+
+                currentPage[0]++;
             }
+
+            logger.info("Completed fetching and saving all problems. Total processed: {}", processedCount);
+        } catch (Exception e) {
+            logger.error("Error fetching problems from the API.", e);
         }
     }
 
@@ -82,7 +117,12 @@ public class ProblemServiceImpl implements ProblemService {
         if (tags != null) {
             for (Map<String, Object> tag : tags) {
                 Integer tagId = (Integer) tag.get("bojTagId");
-                String tagName = (String) ((List<Map<String, Object>>) tag.get("displayNames")).get(0).get("name");
+                List<Map<String, Object>> displayNames = (List<Map<String, Object>>) tag.get("displayNames");
+                String tagName = displayNames.stream()
+                        .filter(dn -> "ko".equals(dn.get("language")))
+                        .map(dn -> (String) dn.get("name"))
+                        .findFirst()
+                        .orElse("Unknown Tag");
 
                 // TagLabel 저장
                 TagLabel tagLabel = tagLabelRepository.findById(tagId).orElse(new TagLabel());
@@ -99,16 +139,5 @@ public class ProblemServiceImpl implements ProblemService {
                 problemTagRepository.save(problemTag);
             }
         }
-    }
-
-    private String generateProblemIdsParam(int startId, int endId) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = startId; i <= endId; i++) {
-            if (sb.length() > 0) {
-                sb.append(",");
-            }
-            sb.append(i);
-        }
-        return sb.toString();
     }
 }
