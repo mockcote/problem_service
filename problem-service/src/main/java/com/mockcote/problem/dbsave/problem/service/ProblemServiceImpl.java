@@ -9,17 +9,21 @@ import com.mockcote.problem.dbsave.tag.entity.TagLabel;
 import com.mockcote.problem.dbsave.tag.repository.TagLabelRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class ProblemServiceImpl implements ProblemService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProblemServiceImpl.class);
 
     @Autowired
     private ProblemRepository problemRepository;
@@ -34,30 +38,77 @@ public class ProblemServiceImpl implements ProblemService {
     @Transactional
     public void fetchAndSaveAllProblems() {
         RestTemplate restTemplate = new RestTemplate();
-        int batchSize = 50; // 한 번에 가져올 문제 수
-        int startId = 1000; // 시작 ID
-        int endId = 32974;   // 종료 ID
+        int currentPage = 1;
+        int totalCount = 0;
+        int processedCount = 0;
 
-        for (int i = startId; i <= endId; i += batchSize) {
-            String problemIds = generateProblemIdsParam(i, Math.min(i + batchSize - 1, endId));
-            String apiUrl = "https://solved.ac/api/v3/problem/lookup?problemIds=" + problemIds;
+        try {
+            while (true) {
+                // UriComponentsBuilder를 사용하여 URL 구성
+                String apiUrl = UriComponentsBuilder.fromHttpUrl("https://solved.ac/api/v3/search/problem")
+                        .queryParam("query", "lang:ko")
+                        .queryParam("page", currentPage)
+                        .toUriString();
 
-            try {
-                ResponseEntity<List<Map<String, Object>>> response = restTemplate.exchange(
+                logger.info("Fetching page {} from API: {}", currentPage, apiUrl);
+
+                // HTTP 헤더 설정
+                HttpHeaders headers = new HttpHeaders();
+                headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+                headers.set("User-Agent", "Mozilla/5.0"); // 필요 시 User-Agent 설정
+
+                HttpEntity<String> entity = new HttpEntity<>(headers);
+
+                // API 요청
+                ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
                         apiUrl,
                         HttpMethod.GET,
-                        null,
+                        entity,
                         new ParameterizedTypeReference<>() {}
                 );
 
-                List<Map<String, Object>> problems = response.getBody();
-                if (problems != null) {
-                    problems.forEach(this::saveProblem);
+                Map<String, Object> responseBody = response.getBody();
+                if (responseBody == null) {
+                    logger.warn("Response body is null for page {}", currentPage);
+                    break;
                 }
-            } catch (Exception e) {
-                System.err.println("Error fetching problems for IDs: " + problemIds);
-                e.printStackTrace();
+
+                // 응답 본문 로그 출력 (디버깅 용도)
+                logger.debug("Response Body: {}", responseBody);
+
+                if (currentPage == 1) {
+                    // 최초 페이지에서 전체 개수 확인
+                    Object countObj = responseBody.get("count");
+                    if (countObj instanceof Integer) {
+                        totalCount = (Integer) countObj;
+                        logger.info("Total problems to process: {}", totalCount);
+                    } else if (countObj instanceof Number) {
+                        totalCount = ((Number) countObj).intValue();
+                        logger.info("Total problems to process: {}", totalCount);
+                    } else {
+                        logger.warn("Unexpected type for 'count': {}", countObj != null ? countObj.getClass().getName() : "null");
+                    }
+                }
+
+                List<Map<String, Object>> items = (List<Map<String, Object>>) responseBody.get("items");
+                if (items == null || items.isEmpty()) {
+                    logger.info("No more items found. Ending pagination.");
+                    break;
+                }
+
+                items.forEach(this::saveProblem);
+                processedCount += items.size();
+                logger.info("Processed {}/{} problems from page {}", processedCount, totalCount, currentPage);
+
+                currentPage++;
+
+                // Optional: API 호출 간 간격을 두어 Rate Limiting 방지
+                // Thread.sleep(100); // 100ms 대기
             }
+
+            logger.info("Completed fetching and saving all problems. Total processed: {}", processedCount);
+        } catch (Exception e) {
+            logger.error("Error fetching problems from the new API.", e);
         }
     }
 
@@ -82,7 +133,13 @@ public class ProblemServiceImpl implements ProblemService {
         if (tags != null) {
             for (Map<String, Object> tag : tags) {
                 Integer tagId = (Integer) tag.get("bojTagId");
-                String tagName = (String) ((List<Map<String, Object>>) tag.get("displayNames")).get(0).get("name");
+                // displayNames는 리스트이므로 "ko" 언어의 name을 찾아야 함
+                List<Map<String, Object>> displayNames = (List<Map<String, Object>>) tag.get("displayNames");
+                String tagName = displayNames.stream()
+                        .filter(dn -> "ko".equals(dn.get("language")))
+                        .map(dn -> (String) dn.get("name"))
+                        .findFirst()
+                        .orElse("Unknown Tag");
 
                 // TagLabel 저장
                 TagLabel tagLabel = tagLabelRepository.findById(tagId).orElse(new TagLabel());
@@ -99,16 +156,5 @@ public class ProblemServiceImpl implements ProblemService {
                 problemTagRepository.save(problemTag);
             }
         }
-    }
-
-    private String generateProblemIdsParam(int startId, int endId) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = startId; i <= endId; i++) {
-            if (sb.length() > 0) {
-                sb.append(",");
-            }
-            sb.append(i);
-        }
-        return sb.toString();
     }
 }
