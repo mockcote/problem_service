@@ -94,6 +94,17 @@ public class QueryProblemService {
     public QueryProblem getRandomProblemWithinDifficulty() {
         return problemRepository.findRandomProblemWithinDifficulty();
     }
+    
+    /**
+     * 사용자가 특정 문제를 해결했는지 확인
+     * @param handle 사용자 핸들
+     * @param problemId 문제 번호
+     * @return 해결 여부
+     */
+    @Transactional(readOnly = true)
+    public boolean hasUserSolvedProblem(String handle, int problemId, Set<Integer> solvedProblemIds) {
+        return solvedProblemIds.contains(problemId);
+    }
 }
 
 	
