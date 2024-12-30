@@ -1,0 +1,28 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: problem-service
+
+  # DB 설정
+  datasource:
+    url: jdbc:mysql://localhost:3306/mockcote_problem?serverTimezone=Asia/Seoul
+    username: ssafy
+    password: ssafyssafy
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: DEBUG
+    com.example.userservice: DEBUG
