@@ -5,11 +5,11 @@ FROM maven:3-openjdk-17 AS build
 WORKDIR /app
 
 # Maven 의존성 캐싱
-COPY user-service/pom.xml ./problem-service/
+COPY problem-service/pom.xml ./problem-service/
 RUN mvn -f ./problem-service/pom.xml dependency:go-offline
 
 # 프로젝트 소스 복사 및 빌드
-COPY user-service ./user-service
+COPY problem-service ./problem-service
 RUN mvn -f ./problem-service/pom.xml clean package -DskipTests
 
 # 2단계: 애플리케이션 실행
