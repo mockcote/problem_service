@@ -85,3 +85,5 @@ docker-compose.override.yml
 # 특정 사용자 디렉토리
 /logs
 /config/
+
+.vscode
