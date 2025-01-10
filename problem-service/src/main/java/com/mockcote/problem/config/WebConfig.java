@@ -24,14 +24,16 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins(
+                .allowedOriginPatterns(
                         "http://localhost:3000",
                         "http://mockcote.site",
-                        "https://mockcote.site" // 프론트엔드 배포 도메인 추가
+                        "https://mockcote.site",
+                        "https://*.mockcote.site" // 하위 도메인 허용
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
     }
+
 
 }
